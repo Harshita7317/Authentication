@@ -3,48 +3,42 @@ const app = express();
 app.use(express.json());
 const cookies = require("cookie-parser");
 app.use(cookies());
-
+const { connectDatabase } = require("./Connections/connections"); //for database connection
 const generateToken = require("./tokens/generateToken");
-// const verifyToken = require("./tokens/verifyToken");
+const SIGNUP_MODELS = require("./models/Signup");
 
-const users = []; //to store the userdata
-
-app.post("/signup", (req, res) => {
+//Signup API
+app.post("/signup", async (req, res) => {
   try {
-    console.log(req.body);
-    const username = req.body.username;
-    const password = req.body.password;
-    if (users.find((user) => user.username === username)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "User already exists" });
-    }
-    users.push({ username, password });
-    return res.json({ success: true, message: "User signed up successfully" });
-  } catch (error) {}
+    const signupdetails = {
+      username: req.body.username,
+      password: req.body.password,
+      useremail: req.body.useremail,
+    };
+    console.log(signupdetails);
+
+    const Signup = await SIGNUP_MODELS(signupdetails);
+    await Signup.save();
+    return res.json({ success: true, message: "data saved successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({ success: false, error: "error.message" });
+  }
 });
 
-//Login api
-app.post("/login", (req, res) => {
+//Login API
+app.post("/login", async (req, res) => {
   try {
     const username = req.body.username;
     const password = req.body.password;
-
-    //find user in the users array
-    const user = users.find((user) => user.username === username);
-    if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, error: "User doesn't exist" });
-    }
-    //to check password
-    if (user.password === password) {
+    const savepassword = await SIGNUP_MODELS.findOne({ password: password });
+    if (savepassword) {
       const token = generateToken(username);
       console.log(token);
       res.cookie("web_tk", token);
       return res.json({
         success: true,
-        message: "Cookie generated successfully",
+        message: "Logged In and Cookie generated successfully",
       });
     } else {
       return res
@@ -56,6 +50,7 @@ app.post("/login", (req, res) => {
   }
 });
 
+connectDatabase();
 const PORT = 8000;
 app.listen(PORT, async () => {
   await console.log("Server is running on port", PORT);
