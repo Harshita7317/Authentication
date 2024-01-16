@@ -73,6 +73,15 @@ app.get("/chats", middleware, (req, res) => {
   }
 });
 
+//My feed
+app.get("/feed", middleware, (req, res) => {
+  try {
+    return res.json({ success: true, message: "This is your feed" });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 const PORT = 8000;
 app.listen(PORT, async () => {
   await console.log("Server is running on port", PORT);
